@@ -1,0 +1,17 @@
+# Task 1 Examine the STP Default State
+Determine the root bridge:
+When clicking the 'Capture/Forward' button, we can see packets
+starting from S6. This is the root bridge, which we then
+confirmed by entering the CLI and ran the 'show spanning-tree'
+command.
+
+# Task 2 Configue the root bridge
+By switching to real time mode and entering the command
+'spanning-tree vlan 1 priority 4096' in the configuration
+terminal in C1 we configured it to be the root bridge.
+
+
+# Task 3 Configure the Backup Root Bridge
+When C2 is configured as the backup root bridge, the links
+between C2 and the distribution layer are amber while the links
+going from C1 are all green.
