@@ -1,0 +1,284 @@
+***** IP Addressing
+
+      To help with calculating IP addresses we used [[http://vlsm-calc.net/][vlsm-calc]]. We choose the major network
+      to be 10.0.0.0. The vlsm-calc service helped us to devide the network into subnets
+      with the correct amount of addresses. The "BACK" networks are the backbone networks
+      that connects the routers.
+
+      The following figure shows the topology of the network. The "Firefox-1" host that is
+      connected to the "pfSense" server is used to configure the "pfSense" host via a HTTP
+      based service.
+
+      [[~/Desktop/1dv702-assign3-topology.png]]
+
+      | Major Network                               | 10.0.0.0/12 |
+      | Available IP addresses in major network     |     1048574 |
+      | Number of IP addresses needed               |         863 |
+      | Available IP addresses in allocated subnets |        1058 |
+
+      About 0% of available major network address space is used and about 82% of subnetted
+      network address space is used.
+
+      Below is a table of the networks we have in the network. As we can see in the table
+      we have the network name. The needed size and the actual size of the network. It
+      also contains the netmask and CIDR address as well as the network range and
+      broadcast address.
+
+      |-------------+-------------+----------------+------------+------+-----------------+-------------------------+------------|
+      | Subnet Name | Needed Size | Allocated Size |    Address | Mask |        Dec Mask | Assignable Range        |  Broadcast |
+      |-------------+-------------+----------------+------------+------+-----------------+-------------------------+------------|
+      | VLAN40      |         414 |            510 |   10.0.0.0 | /23  |   255.255.254.0 | 10.0.0.1 - 10.0.1.254   | 10.0.1.255 |
+      |-------------+-------------+----------------+------------+------+-----------------+-------------------------+------------|
+      | VLAN30      |         201 |            254 |   10.0.2.0 | /24  |   255.255.255.0 | 10.0.2.1 - 10.0.2.254   | 10.0.2.255 |
+      |-------------+-------------+----------------+------------+------+-----------------+-------------------------+------------|
+      | VLAN50      |         109 |            126 |   10.0.3.0 | /25  | 255.255.255.128 | 10.0.3.1 - 10.0.3.126   | 10.0.3.127 |
+      |-------------+-------------+----------------+------------+------+-----------------+-------------------------+------------|
+      | VLAN10      |          58 |             62 | 10.0.3.128 | /26  | 255.255.255.192 | 10.0.3.129 - 10.0.3.190 | 10.0.3.191 |
+      |-------------+-------------+----------------+------------+------+-----------------+-------------------------+------------|
+      | VLAN60      |          54 |             62 | 10.0.3.192 | /26  | 255.255.255.192 | 10.0.3.193 - 10.0.3.254 | 10.0.3.255 |
+      |-------------+-------------+----------------+------------+------+-----------------+-------------------------+------------|
+      | VLAN20      |          12 |             14 |   10.0.4.0 | /28  | 255.255.255.240 | 10.0.4.1 - 10.0.4.14    |  10.0.4.15 |
+      |-------------+-------------+----------------+------------+------+-----------------+-------------------------+------------|
+      | BACK1       |           3 |              6 |  10.0.4.16 | /29  | 255.255.255.248 | 10.0.4.17 - 10.0.4.22   |  10.0.4.23 |
+      |-------------+-------------+----------------+------------+------+-----------------+-------------------------+------------|
+      | BACK2       |           3 |              6 |  10.0.4.24 | /29  | 255.255.255.248 | 10.0.4.25 - 10.0.4.30   |  10.0.4.31 |
+      |-------------+-------------+----------------+------------+------+-----------------+-------------------------+------------|
+      | BACK3       |           3 |              6 |  10.0.4.32 | /29  | 255.255.255.248 | 10.0.4.33 - 10.0.4.38   |  10.0.4.39 |
+      |-------------+-------------+----------------+------------+------+-----------------+-------------------------+------------|
+      | BACK4       |           3 |              6 |  10.0.4.40 | /29  | 255.255.255.248 | 10.0.4.41 - 10.0.4.46   |  10.0.4.47 |
+      |-------------+-------------+----------------+------------+------+-----------------+-------------------------+------------|
+      | BACK5       |           3 |              6 |  10.0.4.48 | /29  | 255.255.255.248 | 10.0.4.49 - 10.0.4.54   |  10.0.4.55 |
+      |-------------+-------------+----------------+------------+------+-----------------+-------------------------+------------|
+
+***** Routing and NAT
+
+      Routing is done in the backbone network. The Microtik, Cisco CSR, PfSense and Cisco
+      ASA all runs OSPF for routing. We have NAT configured in one place in the network
+      and that is on the Cisco ASA.
+
+***** Configurations and notes
+
+      This is the actual configuration and network data that is related to all of the
+      devices in the network. It also contains some related information about how to do
+      some basic operations on devices.
+
+****** Resources
+
+       https://www.youtube.com/watch?v=t-AjBM9P8A8&t=275s
+       https://docs.python.org/3.6/library/telnetlib.html
+       https://gns3.com/discussions/1-4-qemu-csr1000v-diag-port-for- ASA telnet
+
+
+****** Microtik
+
+       | User     | admin   |
+       | Password | <BLANK> |
+
+       | Network |         IP | CIDR | Netmask | Interface |
+       |---------+------------+------+---------+-----------|
+       | BACK1   |  10.0.4.18 | /29  |         | ether1    |
+       | BACK2   |  10.0.4.25 | /29  |         | ether2    |
+       | PARENT  |          - | -    | -       | ether3    |
+       | VLAN10  | 10.0.3.129 | /26  |         | VLAN10    |
+       | VLAN20  |          ? | ?    |         | VLAN20    |
+
+
+       #+BEGIN_SRC text
+         /interface vlan
+         add interface=ether3 name=vlan10 vlan-id=10
+         add interface=ether3 name=vlan20 vlan-id=20
+         /ip pool
+         add name=dhcp_pool1 ranges=10.0.3.130 - 10.0.3.190
+         /ip dhcp-server
+         add address-pool=dhcp_pool1 disabled=no interface=vlan10 name=dhcp1
+         /ip address
+         add address=10.0.3.129/26 interface=vlan10 network=10.0.3.128
+         add address=10.0.4.18/29 interface=ether1 network=10.0.4.16
+         add address=10.0.4.25/29 interface=ether2 network=10.0.4.24
+         /ip dhcp-server network
+         add address=10.0.3.128/26 dns-server=8.8.8.8 gateway=10.0.3.129
+         /routing ospf network
+         add area=backbone network=10.0.3.128/26
+         add area=backbone network=10.0.4.0/28
+         add area=backbone network=10.0.4.24/29
+         add area=backbone network=10.0.4.16/29
+       #+END_SRC
+
+       Print OSPF table
+
+       #+BEGIN_SRC sh
+       ip route
+       print
+       #+END_SRC
+
+****** PfSense
+
+       | User     | admin  |
+       | Password | pfsense |
+
+       | VLAN    |         IP | CIDR |         Netmask | Interface |
+       |---------+------------+------+-----------------+-----------|
+       | BACK1   |  10.0.4.17 | /29  | 255.255.255.248 | em3       |
+       | BACK3   |  10.0.4.33 | /29  | 255.255.255.248 | em4       |
+       | BACK4   |  10.0.4.42 | /29  | 255.255.255.248 | em0       |
+       | PARENT  |          - | -    |               - | em1       |
+       | VLAN50  |   10.0.3.1 | /25  |                 | em1       |
+       | VLAN60  | 10.0.3.193 | /26  |                 | em1       |
+       | Firefox |  10.0.4.49 | -    |               - | em2       |
+
+****** Cisco Router
+
+       [[https://github.com/jherrlin/dotfiles/blob/master/arch/helpme/.docs/cisco.org][GH notes]]
+
+       All interfaces need to be brought up manually.
+
+       | VLAN   |        IP | CIDR |         Netmask | Interface        |
+       |--------+-----------+------+-----------------+------------------|
+       | BACK3  | 10.0.4.34 | /29  | 255.255.255.248 | GigabitEthernet2 |
+       | BACK2  | 10.0.4.26 | /29  | 255.255.255.248 | GigabitEthernet1 |
+       | VLAN30 |  10.0.2.1 | /24  |   255.255.255.0 | GigabitEthernet3 |
+       | VLAN40 |  10.0.0.1 | /23  |   255.255.254.0 | GigabitEthernet3 |
+
+
+       #+BEGIN_SRC text
+         platform console serial
+
+         interface GigabitEthernet1
+         ip address 10.0.4.26 255.255.255.248
+         no shut
+         exit
+
+         interface GigabitEthernet2
+         ip address 10.0.4.34 255.255.255.248
+         no shut
+         exit
+
+         interface GigabitEthernet3
+           no ip address
+           ip access-group 101 in
+           negotiation auto
+           exit
+
+         interface GigabitEthernet3.30
+           encapsulation dot1Q 30
+           ip address 10.0.2.1 255.255.255.0
+           ip access-group 130 in
+           exit
+
+         interface GigabitEthernet3.40
+           encapsulation dot1Q 40
+           ip address 10.0.0.1 255.255.254.0
+           exit
+
+         ip dhcp pool vlan30
+           network 10.0.2.0 255.255.255.0
+           default-router 10.0.2.1
+           dns-server 8.8.8.8
+           exit
+
+         router ospf 10
+           network 10.0.0.0 0.0.0.255 area 0
+           network 10.0.0.2 0.0.0.255 area 0
+           network 10.0.4.24 0.0.0.255 area 0
+           network 10.0.4.32 0.0.0.255 area 0
+       #+END_SRC
+
+       #+BEGIN_SRC sh
+       wr mem // Write to mem
+       conf m // Load config from memory
+       #+END_SRC
+
+****** Cisco ASA
+
+       | VLAN     | IP        | CIDR |         Netmask | Interface          |
+       |----------+-----------+------+-----------------+--------------------|
+       | internet | DHCP      |      |                 | GigabitEthernet0/1 |
+       | BACK4    | 10.0.4.41 | /29  | 255.255.255.248 | GigabitEthernet0/1 |
+
+       #+BEGIN_SRC text
+         platform console serial
+
+         interface Gigabitethernet0/0
+           no shut
+           nameif INTERNAL
+           security-level 100
+           ip address 10.0.4.41 255.255.255.248
+           exit
+
+         interface GigabitEthernet0/1
+           no shut
+           nameif EXTERNAL
+           security-level 100
+           ip address dhcp setroute
+           exit
+
+         object network internal-external-nat
+           subnet 10.0.4.40 255.255.255.248
+           nat (internal,external) dynamic interface
+           exit
+
+         policy-map global_policy
+           class inspection_default
+           inspect icmp
+           exit
+
+         router ospf 10
+           network 10.0.4.40 255.255.255.248 area 0
+           network 10.0.4.40 0.0.0.255 area 0
+           network 0.0.0.0 0.0.0.0 area 0
+           log-adj-changes
+           default-information originate always
+           exit
+
+         object network internal-nat
+           subnet 10.0.0.0 255.0.0.0
+           nat (INTERNAL,EXTERNAL) dynamic interface
+           exit
+
+         object network external-nat
+           subnet 0.0.0.0 0.0.0.0
+           nat (INTERNAL,EXTERNAL) dynamic interface
+           exit
+
+         same-security-traffic permit inter-interface
+         mtu INTERNAL 1500
+         mtu EXTERNAL 1500
+         exit
+       #+END_SRC
+
+       Show route
+
+       #+BEGIN_SRC text
+         show route
+       #+END_SRC
+
+       Show ASP table routing
+
+       #+BEGIN_SRC text
+         show asp table routing
+       #+END_SRC
+
+******* Resources
+
+        [[https://www.speaknetworks.com/enable-icmp-inspection-to-allow-ping-traffic-passing-asa/][Allow ICMP]]
+        [[https://gns3.com/discussions/how-to-configure-any-asav-qcow2-][Fix telnet for ASA]]
+
+****** Config light hosts
+******* Firefox OS
+
+        This is the commands to set a static IP address on the Firefox OS hosts.
+
+        #+BEGIN_SRC sh
+        sudo su
+        ifconfig eth0 10.0.4.50
+        route add default gw 10.0.4.1
+        #+END_SRC
+
+******* Tiny clients
+
+        To get an IP address from the DHCP server.
+
+        #+BEGIN_SRC sh
+        ip dhcp -r
+        show ip
+        #+END_SRC
